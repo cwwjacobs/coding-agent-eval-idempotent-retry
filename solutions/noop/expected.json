@@ -1,0 +1,8 @@
+{
+  "verdict": "FAIL",
+  "failed_checks": [
+    "behavior.distinct_orders_distinct_charges",
+    "behavior.lost_response_single_charge"
+  ],
+  "about": "The untouched starting code: retries without an idempotency key and double-charges when a response is lost."
+}

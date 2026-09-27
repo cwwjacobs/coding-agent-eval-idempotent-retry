@@ -1,0 +1,298 @@
+{
+  "checks": [
+    {
+      "evidence": {
+        "modified": [],
+        "removed": []
+      },
+      "id": "files.protected_unchanged",
+      "status": "pass"
+    },
+    {
+      "evidence": {
+        "added_outside_payclient": []
+      },
+      "id": "files.no_unexpected_files",
+      "status": "pass"
+    },
+    {
+      "evidence": {
+        "expected": {
+          "charge_params": [
+            "self",
+            "order_id",
+            "amount_cents"
+          ],
+          "exceptions": {
+            "GatewayTimeout": true,
+            "PaymentUnavailable": true
+          },
+          "init_params": [
+            "self",
+            "transport",
+            "max_attempts"
+          ],
+          "max_attempts_default": 3,
+          "receipt_fields": [
+            "order_id",
+            "charge_id",
+            "amount_cents"
+          ]
+        },
+        "observed": {
+          "charge_params": [
+            "self",
+            "order_id",
+            "amount_cents"
+          ],
+          "exceptions": {
+            "GatewayTimeout": true,
+            "PaymentUnavailable": true
+          },
+          "init_params": [
+            "self",
+            "transport",
+            "max_attempts"
+          ],
+          "max_attempts_default": 3,
+          "receipt_fields": [
+            "order_id",
+            "charge_id",
+            "amount_cents"
+          ]
+        }
+      },
+      "id": "api.unchanged",
+      "status": "pass"
+    },
+    {
+      "evidence": {
+        "exit_code": 0,
+        "summary": [
+          "OK"
+        ]
+      },
+      "id": "tests.visible_pass",
+      "status": "pass"
+    },
+    {
+      "evidence": {
+        "candidate_outcomes": [
+          {
+            "receipt": {
+              "amount_cents": 1299,
+              "charge_id": "ch_1",
+              "order_id": "order-100"
+            }
+          }
+        ],
+        "charges_recorded_by_gateway": [
+          {
+            "amount_cents": 1299,
+            "charge_id": "ch_1",
+            "order_id": "order-100"
+          }
+        ],
+        "intent": "A normal charge creates exactly one charge and returns its id.",
+        "problems": [],
+        "requests_seen_by_gateway": [
+          {
+            "fault": "ok",
+            "idempotency_key": null,
+            "order_id": "order-100"
+          }
+        ]
+      },
+      "id": "behavior.no_fault_single_charge",
+      "status": "pass"
+    },
+    {
+      "evidence": {
+        "candidate_outcomes": [
+          {
+            "receipt": {
+              "amount_cents": 4500,
+              "charge_id": "ch_2",
+              "order_id": "order-200"
+            }
+          }
+        ],
+        "charges_recorded_by_gateway": [
+          {
+            "amount_cents": 4500,
+            "charge_id": "ch_1",
+            "order_id": "order-200"
+          },
+          {
+            "amount_cents": 4500,
+            "charge_id": "ch_2",
+            "order_id": "order-200"
+          }
+        ],
+        "intent": "The gateway commits, the response is lost, the client retries: still one charge.",
+        "problems": [
+          "order-200: gateway recorded 2 charge(s), expected 1"
+        ],
+        "requests_seen_by_gateway": [
+          {
+            "fault": "timeout_after_commit",
+            "idempotency_key": null,
+            "order_id": "order-200"
+          },
+          {
+            "fault": "ok",
+            "idempotency_key": null,
+            "order_id": "order-200"
+          }
+        ]
+      },
+      "id": "behavior.lost_response_single_charge",
+      "status": "fail"
+    },
+    {
+      "evidence": {
+        "candidate_outcomes": [
+          {
+            "receipt": {
+              "amount_cents": 800,
+              "charge_id": "ch_1",
+              "order_id": "order-300"
+            }
+          }
+        ],
+        "charges_recorded_by_gateway": [
+          {
+            "amount_cents": 800,
+            "charge_id": "ch_1",
+            "order_id": "order-300"
+          }
+        ],
+        "intent": "The request is lost before commit; the retry must still charge exactly once.",
+        "problems": [],
+        "requests_seen_by_gateway": [
+          {
+            "fault": "timeout_before_commit",
+            "idempotency_key": null,
+            "order_id": "order-300"
+          },
+          {
+            "fault": "ok",
+            "idempotency_key": null,
+            "order_id": "order-300"
+          }
+        ]
+      },
+      "id": "behavior.request_lost_single_charge",
+      "status": "pass"
+    },
+    {
+      "evidence": {
+        "candidate_outcomes": [
+          {
+            "raised": "PaymentUnavailable"
+          }
+        ],
+        "charges_recorded_by_gateway": [],
+        "intent": "Every attempt times out before commit: raise PaymentUnavailable, charge nothing.",
+        "problems": [],
+        "requests_seen_by_gateway": [
+          {
+            "fault": "timeout_before_commit",
+            "idempotency_key": null,
+            "order_id": "order-400"
+          },
+          {
+            "fault": "timeout_before_commit",
+            "idempotency_key": null,
+            "order_id": "order-400"
+          },
+          {
+            "fault": "timeout_before_commit",
+            "idempotency_key": null,
+            "order_id": "order-400"
+          }
+        ]
+      },
+      "id": "behavior.gateway_down_raises",
+      "status": "pass"
+    },
+    {
+      "evidence": {
+        "candidate_outcomes": [
+          {
+            "receipt": {
+              "amount_cents": 700,
+              "charge_id": "ch_2",
+              "order_id": "order-500"
+            }
+          },
+          {
+            "receipt": {
+              "amount_cents": 900,
+              "charge_id": "ch_4",
+              "order_id": "order-501"
+            }
+          }
+        ],
+        "charges_recorded_by_gateway": [
+          {
+            "amount_cents": 700,
+            "charge_id": "ch_1",
+            "order_id": "order-500"
+          },
+          {
+            "amount_cents": 700,
+            "charge_id": "ch_2",
+            "order_id": "order-500"
+          },
+          {
+            "amount_cents": 900,
+            "charge_id": "ch_3",
+            "order_id": "order-501"
+          },
+          {
+            "amount_cents": 900,
+            "charge_id": "ch_4",
+            "order_id": "order-501"
+          }
+        ],
+        "intent": "Two different orders, each with a lost response: one charge per order.",
+        "problems": [
+          "order-500: gateway recorded 2 charge(s), expected 1",
+          "order-501: gateway recorded 2 charge(s), expected 1"
+        ],
+        "requests_seen_by_gateway": [
+          {
+            "fault": "timeout_after_commit",
+            "idempotency_key": null,
+            "order_id": "order-500"
+          },
+          {
+            "fault": "ok",
+            "idempotency_key": null,
+            "order_id": "order-500"
+          },
+          {
+            "fault": "timeout_after_commit",
+            "idempotency_key": null,
+            "order_id": "order-501"
+          },
+          {
+            "fault": "ok",
+            "idempotency_key": null,
+            "order_id": "order-501"
+          }
+        ]
+      },
+      "id": "behavior.distinct_orders_distinct_charges",
+      "status": "fail"
+    }
+  ],
+  "failed_checks": [
+    "behavior.lost_response_single_charge",
+    "behavior.distinct_orders_distinct_charges"
+  ],
+  "schema": "coding-agent-eval.result.v1",
+  "task": "idempotent-retry",
+  "verdict": "FAIL"
+}

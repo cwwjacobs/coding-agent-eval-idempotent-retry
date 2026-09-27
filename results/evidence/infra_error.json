@@ -1,0 +1,7 @@
+{
+  "checks": [],
+  "error": "gateway exited 3 without a report",
+  "schema": "coding-agent-eval.result.v1",
+  "task": "idempotent-retry",
+  "verdict": "ERROR"
+}

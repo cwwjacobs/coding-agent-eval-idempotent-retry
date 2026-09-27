@@ -1,0 +1,10 @@
+{
+  "verdict": "FAIL",
+  "failed_checks": [
+    "behavior.distinct_orders_distinct_charges",
+    "behavior.gateway_down_raises",
+    "behavior.lost_response_single_charge",
+    "behavior.request_lost_single_charge"
+  ],
+  "about": "Superficial fix: never retries and treats a timeout as success, returning a receipt for a charge that may not exist."
+}

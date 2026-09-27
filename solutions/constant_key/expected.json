@@ -1,0 +1,7 @@
+{
+  "verdict": "FAIL",
+  "failed_checks": [
+    "behavior.distinct_orders_distinct_charges"
+  ],
+  "about": "Plausible but wrong: one idempotency key for every order. Passes every single-order scenario; the second order silently gets the first order's charge."
+}

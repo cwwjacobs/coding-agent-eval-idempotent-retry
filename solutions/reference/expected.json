@@ -1,0 +1,5 @@
+{
+  "verdict": "PASS",
+  "failed_checks": [],
+  "about": "Known-good solution: one stable Idempotency-Key per order, PaymentUnavailable when the gateway stays down."
+}

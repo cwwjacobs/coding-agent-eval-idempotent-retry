@@ -1,0 +1,118 @@
+{
+  "all_branches_match_expectation": true,
+  "fixture_sha256": "0966fcc9ff36e574d4f608992c9e98cf112fa3ab66d8f256604899b276630c88",
+  "image": "python@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f",
+  "rows": [
+    {
+      "about": "Known-good solution: one stable Idempotency-Key per order, PaymentUnavailable when the gateway stays down.",
+      "branch": "reference",
+      "error": null,
+      "expected_failed_checks": [],
+      "expected_verdict": "PASS",
+      "matches_expectation": true,
+      "observed_failed_checks": [],
+      "observed_verdict": "PASS"
+    },
+    {
+      "about": "The untouched starting code: retries without an idempotency key and double-charges when a response is lost.",
+      "branch": "noop",
+      "error": null,
+      "expected_failed_checks": [
+        "behavior.distinct_orders_distinct_charges",
+        "behavior.lost_response_single_charge"
+      ],
+      "expected_verdict": "FAIL",
+      "matches_expectation": true,
+      "observed_failed_checks": [
+        "behavior.distinct_orders_distinct_charges",
+        "behavior.lost_response_single_charge"
+      ],
+      "observed_verdict": "FAIL"
+    },
+    {
+      "about": "Superficial fix: never retries and treats a timeout as success, returning a receipt for a charge that may not exist.",
+      "branch": "swallow_timeout",
+      "error": null,
+      "expected_failed_checks": [
+        "behavior.distinct_orders_distinct_charges",
+        "behavior.gateway_down_raises",
+        "behavior.lost_response_single_charge",
+        "behavior.request_lost_single_charge"
+      ],
+      "expected_verdict": "FAIL",
+      "matches_expectation": true,
+      "observed_failed_checks": [
+        "behavior.distinct_orders_distinct_charges",
+        "behavior.gateway_down_raises",
+        "behavior.lost_response_single_charge",
+        "behavior.request_lost_single_charge"
+      ],
+      "observed_verdict": "FAIL"
+    },
+    {
+      "about": "Plausible but wrong: one idempotency key for every order. Passes every single-order scenario; the second order silently gets the first order's charge.",
+      "branch": "constant_key",
+      "error": null,
+      "expected_failed_checks": [
+        "behavior.distinct_orders_distinct_charges"
+      ],
+      "expected_verdict": "FAIL",
+      "matches_expectation": true,
+      "observed_failed_checks": [
+        "behavior.distinct_orders_distinct_charges"
+      ],
+      "observed_verdict": "FAIL"
+    },
+    {
+      "about": "Changes the public API to an opt-in key and edits the protected tests to match. The default path still double-charges.",
+      "branch": "tamper_tests",
+      "error": null,
+      "expected_failed_checks": [
+        "api.unchanged",
+        "behavior.distinct_orders_distinct_charges",
+        "behavior.lost_response_single_charge",
+        "files.protected_unchanged"
+      ],
+      "expected_verdict": "FAIL",
+      "matches_expectation": true,
+      "observed_failed_checks": [
+        "api.unchanged",
+        "behavior.distinct_orders_distinct_charges",
+        "behavior.lost_response_single_charge",
+        "files.protected_unchanged"
+      ],
+      "observed_verdict": "FAIL"
+    },
+    {
+      "about": "Evasion attempt: leaves the bug and adds a sitecustomize.py that makes any unittest run report success.",
+      "branch": "tamper_injection",
+      "error": null,
+      "expected_failed_checks": [
+        "behavior.distinct_orders_distinct_charges",
+        "behavior.lost_response_single_charge",
+        "files.no_unexpected_files"
+      ],
+      "expected_verdict": "FAIL",
+      "matches_expectation": true,
+      "observed_failed_checks": [
+        "behavior.distinct_orders_distinct_charges",
+        "behavior.lost_response_single_charge",
+        "files.no_unexpected_files"
+      ],
+      "observed_verdict": "FAIL"
+    },
+    {
+      "about": "Harness self-test: the reference solution with the gateway forced to crash. The verifier must report ERROR, not PASS or FAIL.",
+      "branch": "infra_error",
+      "error": "gateway exited 3 without a report",
+      "expected_failed_checks": [],
+      "expected_verdict": "ERROR",
+      "matches_expectation": true,
+      "observed_failed_checks": [],
+      "observed_verdict": "ERROR"
+    }
+  ],
+  "schema": "coding-agent-eval.matrix.v1",
+  "task": "idempotent-retry",
+  "verifier_sha256": "31f569be846dadb60e6e80716462b1b5552cf15f95ebf7be5f147f7dacd4d9a4"
+}

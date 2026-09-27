@@ -1,0 +1,7 @@
+{
+  "verdict": "ERROR",
+  "failed_checks": [],
+  "overlay_from": "reference",
+  "fault_injection": "gateway_crash",
+  "about": "Harness self-test: the reference solution with the gateway forced to crash. The verifier must report ERROR, not PASS or FAIL."
+}

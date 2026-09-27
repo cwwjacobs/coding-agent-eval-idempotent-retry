@@ -1,0 +1,8 @@
+{
+  "files": {
+    "payclient/__init__.py": "15210da1541bec36ec4254e7565a49b559075be69b3ba4b5f9ead62688eaa395",
+    "payclient/client.py": "ebed4ffde75a9df052c66a6ebd7d93d809a55b9af49f2f5ec2f276007be36f8e",
+    "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tests/test_client_basic.py": "215277db582fdeaca198c90a526581fb57f63604a8f72b83a041379bf4325385"
+  }
+}
