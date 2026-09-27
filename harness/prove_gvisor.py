@@ -72,7 +72,9 @@ def main() -> int:
         m["all_branches_match_expectation"] for m in matrices)
     identical = matrices[0]["evidence_sha256"] == matrices[1]["evidence_sha256"]
     runsc_both = all(m["container_runtime"]["requested"] == "runsc" for m in matrices)
-    passed = both_validated and identical and runsc_both
+    # The baseline is fixed; a mismatch fails the proof and is never re-baselined here.
+    baseline_match = all(m["evidence_sha256"] == STANDALONE_BASELINE_EVIDENCE_SHA256 for m in matrices)
+    passed = both_validated and identical and runsc_both and baseline_match
 
     proof = {
         "schema": "coding-agent-eval.gvisor-proof.v1",
@@ -90,8 +92,7 @@ def main() -> int:
         "evidence_sha256": {f"run_{n}": m["evidence_sha256"] for n, m in zip((1, 2), matrices)},
         "evidence_identical_across_runs": identical,
         "standalone_runc_baseline_evidence_sha256": STANDALONE_BASELINE_EVIDENCE_SHA256,
-        "evidence_matches_standalone_runc_baseline": all(
-            m["evidence_sha256"] == STANDALONE_BASELINE_EVIDENCE_SHA256 for m in matrices),
+        "evidence_matches_standalone_runc_baseline": baseline_match,
         "matrix_sha256": {f"run_{n}": sha256_file(OUT / f"matrix-run-{n}.json") for n in (1, 2)},
         "verdicts": [{k: r[k] for k in ("branch", "expected_verdict", "observed_verdict",
                                          "observed_failed_checks", "matches_expectation")}
