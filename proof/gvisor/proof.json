@@ -27,6 +27,7 @@
     "isolation of the verifier from candidate code inside the evaluation container"
   ],
   "schema": "coding-agent-eval.gvisor-proof.v1",
+  "standalone_runc_baseline_evidence_sha256": "bc1d2f0d8676d0538a7cdfaf46c6be36ebf93791a11ee2159b56469d22a9474f",
   "status": "PASSED",
   "steps": {
     "canary": {

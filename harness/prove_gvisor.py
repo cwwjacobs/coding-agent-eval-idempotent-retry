@@ -26,7 +26,8 @@ OUT = ROOT / "proof" / "gvisor"
 sys.path.insert(0, str(ROOT / "harness"))
 import validate  # noqa: E402
 
-STANDALONE_BASELINE_EVIDENCE_PREFIX = "bc1d2f0d8676d053"  # runc baseline at 42f36a8
+# Full evidence SHA-256 of the standalone default-runtime (runc) baseline at 42f36a8.
+STANDALONE_BASELINE_EVIDENCE_SHA256 = "bc1d2f0d8676d0538a7cdfaf46c6be36ebf93791a11ee2159b56469d22a9474f"
 
 
 def run(cmd: list[str], log: Path | None = None, timeout: int = 1800) -> dict:
@@ -88,8 +89,9 @@ def main() -> int:
         "verifier_sha256": matrices[0]["verifier_sha256"],
         "evidence_sha256": {f"run_{n}": m["evidence_sha256"] for n, m in zip((1, 2), matrices)},
         "evidence_identical_across_runs": identical,
-        "evidence_matches_standalone_runc_baseline": matrices[0]["evidence_sha256"].startswith(
-            STANDALONE_BASELINE_EVIDENCE_PREFIX),
+        "standalone_runc_baseline_evidence_sha256": STANDALONE_BASELINE_EVIDENCE_SHA256,
+        "evidence_matches_standalone_runc_baseline": all(
+            m["evidence_sha256"] == STANDALONE_BASELINE_EVIDENCE_SHA256 for m in matrices),
         "matrix_sha256": {f"run_{n}": sha256_file(OUT / f"matrix-run-{n}.json") for n in (1, 2)},
         "verdicts": [{k: r[k] for k in ("branch", "expected_verdict", "observed_verdict",
                                          "observed_failed_checks", "matches_expectation")}
