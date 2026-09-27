@@ -1,0 +1,14 @@
+# Runtime witness — supplementary, not produced by harness/prove_gvisor.py
+# Method: while 'python3 harness/validate.py --runtime runsc' ran (exit 0, 7/7), a loop
+# inspected every running container of the pinned evaluation image every 0.2 s.
+# Observed: 7 distinct evaluation containers, all runtime=runsc, read-only root,
+# network none, CapDrop [ALL].
+# Kernel reported inside the image under runsc: 4.19.0-gvisor (under runc: the host kernel).
+#
+02fe06f6e5459f89bcd4bc04f639fa6449e6cb9801ba80d92344740b1d684e6e runtime=runsc readonly=true network=none capdrop=[ALL]
+56ff6aa04577fd6fb39f7d6e0ed231a9c9512dc79c4f762d8600f685563b2a5a runtime=runsc readonly=true network=none capdrop=[ALL]
+7d58d6bc123b047ba0ef0ef78d2a154220b683dd6dca70dac3c289f5bfbe22bd runtime=runsc readonly=true network=none capdrop=[ALL]
+98b64b00e765a2d09892d645ef58e866bcaa2cad9d7739e07524ec898648c4bd runtime=runsc readonly=true network=none capdrop=[ALL]
+9d67a168d574983fce265d54ce362405b1a4cfcf969dd97ad71c4187e2c48f85 runtime=runsc readonly=true network=none capdrop=[ALL]
+c3b1dc20d228f64ebbcde67e54c84b911022dbfbba97491d79a53007f8aadc59 runtime=runsc readonly=true network=none capdrop=[ALL]
+cae058c258f297229d9f7c3b2bac3eb4a2feec823f1942eeae9a5d4f40049cc4 runtime=runsc readonly=true network=none capdrop=[ALL]

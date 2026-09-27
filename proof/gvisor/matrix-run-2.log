@@ -1,0 +1,14 @@
+$ python3 harness/validate.py --runtime runsc
+
+BRANCH            EXPECTED  OBSERVED  MATCH  FAILED CHECKS (full ids in results/)
+------------------------------------------------------------------------------------------------
+reference         PASS      PASS      yes    
+noop              FAIL      FAIL      yes    distinct_orders, lost_response
+swallow_timeout   FAIL      FAIL      yes    distinct_orders, gateway_down, lost_response, request_lost
+constant_key      FAIL      FAIL      yes    distinct_orders
+tamper_tests      FAIL      FAIL      yes    api, distinct_orders, lost_response, protected_files
+tamper_injection  FAIL      FAIL      yes    distinct_orders, lost_response, unexpected_files
+infra_error       ERROR     ERROR     yes    gateway exited 3 without a report
+------------------------------------------------------------------------------------------------
+7/7 branches got the expected verdict for the expected reasons -> VALIDATED
+exit=0

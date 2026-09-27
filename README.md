@@ -19,7 +19,9 @@ The starting code is in [`fixture/`](fixture/). The agent may edit `payclient/*.
 ## How a verdict is reached
 
 The verifier ([`verifier/`](verifier/)) runs inside a container pinned by digest, with the
-network disabled, all capabilities dropped and the candidate mounted read-only.
+network disabled, all capabilities dropped and the candidate mounted read-only. With
+`--runtime runsc` that container runs on gVisor, which contains the host while candidate
+code executes during evaluation ([proof](#gvisor-proof)).
 
 - **The gateway owns the truth.** A fake payment gateway runs as its own process and keeps
   the ledger. Candidate code reaches it only through a request pipe. "Exactly one charge"
@@ -67,22 +69,46 @@ Current results: [`results/SUMMARY.md`](results/SUMMARY.md), machine-readable
 Requires Docker and Python 3.8+ on the host. The verifier uses only the standard library.
 
 ```sh
-python3 harness/validate.py            # run the matrix (about 10 seconds)
-python3 harness/validate.py --repeat   # run twice; evidence must be byte-identical
+python3 harness/validate.py                  # run the matrix (about 10 seconds)
+python3 harness/validate.py --repeat         # run twice; evidence must be byte-identical
+python3 harness/validate.py --runtime runsc  # evaluation containers under gVisor
+python3 harness/prove_gvisor.py              # full gVisor proof, written to proof/gvisor/
 ```
+
+`--runtime` never falls back: if Docker does not have the named runtime registered, the
+harness refuses to run.
 
 To grade a real agent's attempt, copy `fixture/`, let the agent work in the copy, then:
 
 ```sh
 docker run --rm --network none --read-only --tmpfs /tmp:rw,exec,size=64m \
   --cap-drop ALL --security-opt no-new-privileges --user "$(id -u):$(id -g)" \
-  -v "$PWD/attempt:/work:ro" -v "$PWD/verifier:/verifier:ro" \
+  --runtime runsc -v "$PWD/attempt:/work:ro" -v "$PWD/verifier:/verifier:ro" \
   python@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f \
   python /verifier/verify.py /work
 ```
 
 The recording above is rendered by [VHS](https://github.com/charmbracelet/vhs) from
 [`demo/validate.tape`](demo/validate.tape): `vhs demo/validate.tape`.
+
+## gVisor proof
+
+`python3 harness/prove_gvisor.py` ran the `runsc` canary and then the complete seven-branch
+matrix twice with every evaluation container under gVisor. Both runs gave all seven
+expected verdicts and failed checks, and the evidence was byte-identical across the runs
+and to the default-runtime baseline:
+
+- runtime `runsc version release-20260921.0`, image
+  `python@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f`
+- evidence SHA-256 `bc1d2f0d8676d0538a7cdfaf46c6be36ebf93791a11ee2159b56469d22a9474f`
+
+Details, commands and exit codes: [`proof/gvisor/PROOF.md`](proof/gvisor/PROOF.md). A
+separate runtime check, [`proof/runtime-witness.txt`](proof/runtime-witness.txt), inspected
+each evaluation container while it ran.
+
+This proves host containment under gVisor during evaluation execution, nothing more. It
+does not isolate the verifier from candidate code: both still run inside the same
+evaluation container.
 
 ## What this does and does not establish
 
@@ -94,7 +120,8 @@ The recording above is rendered by [VHS](https://github.com/charmbracelet/vhs) f
 - Candidate code and the verifier share one container and one unprivileged user. The
   verdict rests on the gateway's ledger, which candidate code cannot write to through its
   interface, but code deliberately written to attack the verifier's own processes is out
-  of scope. Separate containers or a gVisor runtime would raise that bar.
+  of scope. gVisor contains the host, not the verifier; separating the two would need the
+  gateway and verdict in a different container.
 - The visible tests are the agent's convenience, not the grader. The verdict comes from
   the hidden scenarios and the file policy.
 - The fixture and all branches are synthetic, written for this sample. Built with AI
@@ -110,4 +137,6 @@ solutions/<branch>/       files overlaid on the fixture, plus expected.json
 harness/validate.py       validation matrix
 results/                  SUMMARY.md, matrix.json, evidence/<branch>.json
 demo/                     VHS tape and recording
+proof/gvisor/             gVisor proof: proof.json, PROOF.md, both matrices and logs
+proof/runtime-witness.txt per-container runtime check from a separate runsc run
 ```
