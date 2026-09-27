@@ -1,5 +1,14 @@
 {
   "all_branches_match_expectation": true,
+  "container_runtime": {
+    "docker_default": "runc",
+    "registered": [
+      "io.containerd.runc.v2",
+      "runc"
+    ],
+    "requested": "docker-default"
+  },
+  "evidence_sha256": "bc1d2f0d8676d0538a7cdfaf46c6be36ebf93791a11ee2159b56469d22a9474f",
   "fixture_sha256": "0966fcc9ff36e574d4f608992c9e98cf112fa3ab66d8f256604899b276630c88",
   "image": "python@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f",
   "rows": [

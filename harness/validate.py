@@ -4,6 +4,7 @@ that each gets its expected verdict for the expected reasons.
     python3 harness/validate.py            # run the matrix
     python3 harness/validate.py --repeat   # run it twice and require identical evidence
     python3 harness/validate.py --lock     # regenerate verifier/fixture.lock.json
+    python3 harness/validate.py --runtime runsc   # run the evaluation containers under gVisor
 
 Needs Docker and Python 3.8+ on the host; the verifier itself runs inside a
 container pinned by digest, with networking disabled.
@@ -49,7 +50,33 @@ def write_lock() -> None:
     print(f"wrote {LOCK_PATH.relative_to(ROOT)}")
 
 
-def run_branch(branch: str, scratch: Path) -> dict:
+def docker_runtimes() -> dict:
+    proc = subprocess.run(["docker", "info", "--format", "{{json .Runtimes}}|{{.DefaultRuntime}}"],
+                          capture_output=True, text=True, timeout=30)
+    if proc.returncode != 0:
+        raise SystemExit(f"ERROR: docker info failed: {proc.stderr.strip()}")
+    runtimes, default = proc.stdout.strip().rsplit("|", 1)
+    return {"registered": sorted(json.loads(runtimes)), "default": default}
+
+
+def runtime_record(requested: str | None) -> dict:
+    info = docker_runtimes()
+    record = {"requested": requested or "docker-default", "docker_default": info["default"],
+              "registered": info["registered"]}
+    if requested is not None and requested not in info["registered"]:
+        raise SystemExit(f"ERROR: container runtime {requested!r} is not registered with Docker "
+                         f"(registered: {info['registered']}); refusing to fall back")
+    if requested == "runsc":
+        proc = subprocess.run(["runsc", "--version"], capture_output=True, text=True, timeout=30)
+        record["runsc_version"] = proc.stdout.strip().splitlines()[0] if proc.returncode == 0 else None
+    return record
+
+
+def evidence_digest(rows: list[dict]) -> str:
+    return sha256_bytes(json.dumps([r["evidence"] for r in rows], sort_keys=True).encode())
+
+
+def run_branch(branch: str, scratch: Path, runtime: str | None = None) -> dict:
     expected = json.loads((SOLUTIONS / branch / "expected.json").read_text())
     work = scratch / branch
     shutil.copytree(FIXTURE, work, ignore=shutil.ignore_patterns("__pycache__"))
@@ -60,6 +87,7 @@ def run_branch(branch: str, scratch: Path) -> dict:
            "--tmpfs", "/tmp:rw,exec,size=64m", "--cap-drop", "ALL",
            "--security-opt", "no-new-privileges", "--pids-limit", "128", "--memory", "512m",
            "--user", f"{os.getuid()}:{os.getgid()}",
+           *(["--runtime", runtime] if runtime else []),
            "-v", f"{work}:/work:ro", "-v", f"{VERIFIER}:/verifier:ro"]
     if expected.get("fault_injection"):
         cmd += ["-e", f"EVAL_FAULT_INJECTION={expected['fault_injection']}"]
@@ -78,12 +106,12 @@ def run_branch(branch: str, scratch: Path) -> dict:
             "matches_expectation": match, "evidence": evidence}
 
 
-def run_matrix() -> list[dict]:
+def run_matrix(runtime: str | None = None) -> list[dict]:
     with tempfile.TemporaryDirectory(prefix="eval-matrix-") as tmp:
-        return [run_branch(b, Path(tmp)) for b in BRANCHES]
+        return [run_branch(b, Path(tmp), runtime) for b in BRANCHES]
 
 
-def write_results(rows: list[dict]) -> None:
+def write_results(rows: list[dict], runtime: dict) -> None:
     (RESULTS / "evidence").mkdir(parents=True, exist_ok=True)
     for row in rows:
         (RESULTS / "evidence" / f"{row['branch']}.json").write_text(
@@ -92,6 +120,8 @@ def write_results(rows: list[dict]) -> None:
         "schema": "coding-agent-eval.matrix.v1",
         "task": "idempotent-retry",
         "image": IMAGE,
+        "container_runtime": runtime,
+        "evidence_sha256": evidence_digest(rows),
         "fixture_sha256": tree_hash(FIXTURE),
         "verifier_sha256": tree_hash(VERIFIER),
         "all_branches_match_expectation": all(r["matches_expectation"] for r in rows),
@@ -99,7 +129,8 @@ def write_results(rows: list[dict]) -> None:
     }
     (RESULTS / "matrix.json").write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n")
     lines = ["# Validation matrix — idempotent-retry", "",
-             f"Image `{IMAGE}`, network disabled. Fixture `{matrix['fixture_sha256'][:12]}`, "
+             f"Image `{IMAGE}`, container runtime `{runtime['requested']}`, network disabled. "
+             f"Fixture `{matrix['fixture_sha256'][:12]}`, "
              f"verifier `{matrix['verifier_sha256'][:12]}`.", "",
              "| Branch | Expected | Observed | Failed checks | Matches |", "|---|---|---|---|---|"]
     for r in rows:
@@ -144,6 +175,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--lock", action="store_true")
     ap.add_argument("--repeat", action="store_true")
+    ap.add_argument("--runtime", default=None,
+                    help="Docker runtime for the evaluation containers, e.g. runsc (no fallback)")
     args = ap.parse_args()
     if args.lock:
         write_lock()
@@ -152,12 +185,13 @@ def main() -> int:
     if lock != manifest(FIXTURE):
         print("ERROR: fixture does not match verifier/fixture.lock.json (run --lock after intended changes)")
         return 2
-    rows = run_matrix()
-    write_results(rows)
+    runtime = runtime_record(args.runtime)
+    rows = run_matrix(args.runtime)
+    write_results(rows, runtime)
     print_table(rows)
     if args.repeat:
         first = json.dumps([r["evidence"] for r in rows], sort_keys=True)
-        second = json.dumps([r["evidence"] for r in run_matrix()], sort_keys=True)
+        second = json.dumps([r["evidence"] for r in run_matrix(args.runtime)], sort_keys=True)
         same = first == second
         print(f"repeat run: evidence {'byte-identical' if same else 'DIFFERS'} "
               f"(sha256 {sha256_bytes(first.encode())[:16]})")
