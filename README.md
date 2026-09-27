@@ -140,3 +140,9 @@ demo/                     VHS tape and recording
 proof/gvisor/             gVisor proof: proof.json, PROOF.md, both matrices and logs
 proof/runtime-witness.txt per-container runtime check from a separate runsc run
 ```
+
+## License
+
+Source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE). You may read,
+run and verify it for noncommercial purposes. Commercial use requires a separate license;
+the contact is in [`LICENSE`](LICENSE).
