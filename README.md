@@ -5,6 +5,25 @@ An agent saying "done" is not evidence that the task is complete. This package d
 from observable effects whether an agent actually fixed the bug, and it is built to make
 false success difficult.
 
+## Measured result
+
+The current proof run sends seven deliberately different solution branches through the
+verifier. All **7/7 produced their predeclared verdict and failed-check identity** under
+gVisor. Two complete gVisor runs produced **byte-identical evidence**, exactly matching
+the recorded standalone baseline.
+
+- runtime: `runsc version release-20260921.0`
+- evidence SHA-256: `bc1d2f0d8676d0538a7cdfaf46c6be36ebf93791a11ee2159b56469d22a9474f`
+- full result matrix: [`results/SUMMARY.md`](results/SUMMARY.md)
+- commands, exit codes and proof artifacts: [`proof/gvisor/PROOF.md`](proof/gvisor/PROOF.md)
+
+Reproduce the result:
+
+```sh
+python3 harness/validate.py --repeat
+python3 harness/prove_gvisor.py
+```
+
 ![Validation matrix run](demo/validate.gif)
 
 ## The task
