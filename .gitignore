@@ -1,2 +1,21 @@
 __pycache__/
 *.pyc
+
+# Local Python environments
+.venv/
+venv/
+
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+secrets*.json
+
+# Local tool/account state
+.aws/
+.ssh/
